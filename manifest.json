@@ -1,0 +1,17 @@
+{
+  "short_name": "تكييف",
+  "name": "اسم التطبيق الكامل",
+  "description": "تطبيق ويب متكامل يرسل الأعطال والإشعارات",
+  "icons": [
+    {
+      "src": "ic_launcher.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "display": "standalone",
+  "orientation": "portrait"
+}
