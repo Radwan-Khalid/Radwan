@@ -1,0 +1,20 @@
+{
+  "short_name": "تكييف",
+  "name": "تكييف سيراميك الرياض",
+  "description": "تطبيق لإدارة بلاغات صيانة المكيفات، وتعيين الفنيين، وإشعارات المدير والفنيين لحظياً",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "ic_launcher.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "./index.html",
+  "scope": "./",
+  "background_color": "#F3F6FA",
+  "theme_color": "#1B4B7A",
+  "display": "standalone",
+  "orientation": "portrait"
+}
