@@ -1,0 +1,1948 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>نظام صيانة المكيفات</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<meta name="apple-mobile-web-app-title" content="تكييف">
+
+<link rel="apple-touch-icon" href="ic_launcher.png">
+
+
+
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging-compat.js"></script>
+
+<style>
+:root{
+  --primary:#1B4B7A;
+  --primaryDark:#123353;
+  --primaryLight:#EAF1F8;
+  --amber:#F0A83C;
+  --amberBg:#FDF2E3;
+  --red:#E14B4B;
+  --redBg:#FDEBEB;
+  --green:#2FA84F;
+  --greenBg:#EAF7EE;
+  --bg:#F3F6FA;
+  --border:#E4E9F1;
+  --text:#1F2A37;
+  --muted:#7C8896;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-tap-highlight-color:transparent;
+}
+button,input,textarea,select{font-family:inherit;}
+#app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;}
+.screen{display:flex;flex-direction:column;flex:1;min-height:100vh;min-height:100dvh;background:var(--bg);}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.px16{padding-inline:16px;}
+.pt16{padding-top:16px;}
+
+/* ---------- Header ---------- */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;color:#fff;background:var(--primary);flex-shrink:0;
+}
+.header .header-left{display:flex;align-items:center;gap:8px;}
+.header .back-btn{background:none;border:none;color:#fff;padding:4px;display:flex;cursor:pointer;}
+.header .header-title{font-weight:700;font-size:15px;}
+
+/* ---------- Top banner (home screens) ---------- */
+.top-banner{padding:18px 16px;color:#fff;background:var(--primary);flex-shrink:0;}
+.top-banner .greet{font-size:12px;color:rgba(255,255,255,.72);}
+.top-banner .name{font-weight:700;font-size:16px;margin-top:2px;}
+.top-banner-row{display:flex;align-items:center;justify-content:space-between;}
+.icon-btn{background:none;border:none;color:#fff;cursor:pointer;padding:4px;display:flex;}
+
+/* ---------- Bottom nav ---------- */
+.bottom-nav{
+  display:flex;align-items:center;justify-content:space-around;
+  border-top:1px solid var(--border);background:#fff;padding:6px 2px;flex-shrink:0;
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:5px 2px;flex:1;background:none;border:none;cursor:pointer;position:relative;
+}
+.nav-item .nav-ic{font-size:18px;line-height:1;}
+.nav-item .nav-label{font-size:9px;color:var(--muted);font-weight:600;}
+.nav-item.active .nav-label{color:var(--primary);font-weight:700;}
+.nav-item .nav-badge{
+  position:absolute;top:0;inset-inline-end:14px;background:var(--red);color:#fff;
+  font-size:9px;font-weight:700;border-radius:99px;min-width:15px;height:15px;
+  display:flex;align-items:center;justify-content:center;padding:0 3px;
+}
+
+/* ---------- Buttons ---------- */
+.btn{border:none;cursor:pointer;font-family:inherit;}
+.btn-primary{
+  background:var(--primary);color:#fff;font-weight:700;font-size:14px;
+  border-radius:12px;padding:13px;width:100%;display:flex;align-items:center;
+  justify-content:center;gap:8px;
+}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-outline{
+  background:#fff;border:1px solid var(--border);border-radius:12px;padding:11px;
+  font-weight:700;font-size:13px;color:var(--primary);width:100%;cursor:pointer;
+}
+.btn-green{background:var(--green);color:#fff;}
+.btn-sm{
+  border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;
+  display:inline-flex;align-items:center;gap:4px;cursor:pointer;border:none;
+}
+.btn-sm-allow{background:#16A34A;color:#fff;}
+.btn-sm-reject{background:var(--redBg);color:var(--red);}
+.btn-sm-danger{background:var(--redBg);color:var(--red);}
+.link-btn{background:none;border:none;color:var(--primary);font-weight:700;font-size:12px;cursor:pointer;padding:0;}
+
+/* ---------- Cards ---------- */
+.card{
+  background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px;
+  width:100%;text-align:start;
+}
+.role-card{
+  display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);
+  border-radius:16px;padding:14px;width:100%;cursor:pointer;text-align:start;
+}
+.role-card .role-ic{
+  width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-size:18px;
+}
+.role-card .role-title{font-weight:700;font-size:14px;}
+.role-card .role-desc{font-size:12px;color:var(--muted);}
+.chev{color:var(--muted);font-size:18px;flex-shrink:0;}
+
+.report-card{
+  display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--border);
+  border-radius:16px;padding:14px;width:100%;cursor:pointer;text-align:start;
+}
+.report-card .row-between{display:flex;align-items:center;justify-content:space-between;width:100%;}
+.report-card .dept{font-weight:700;font-size:14px;}
+.report-card .desc{
+  font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:34px;
+}
+.report-card .meta-row{display:flex;align-items:center;justify-content:space-between;width:100%;padding-top:2px;}
+.report-card .prio{display:flex;align-items:center;gap:4px;}
+.report-card .dot{width:7px;height:7px;border-radius:99px;}
+.report-card .idnum{font-size:11px;font-weight:700;color:var(--muted);}
+.report-card .datestamp{font-size:10px;color:var(--muted);}
+.report-card .assigned-line{font-size:10px;font-weight:700;color:var(--primary);margin-top:2px;}
+
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px;}
+.stat-card .stat-val{font-weight:700;font-size:22px;}
+.stat-card .stat-label{font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ---------- Badges ---------- */
+.badge{
+  font-size:10px;font-weight:700;padding:4px 10px;border-radius:99px;
+  white-space:nowrap;display:inline-block;
+}
+
+/* ---------- Forms ---------- */
+.field-block{margin-bottom:14px;}
+.field-label{font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:5px;}
+.input,.select,.textarea{
+  width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 13px;
+  font-size:14px;background:#fff;color:var(--text);outline:none;
+}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--primary);}
+.textarea{resize:none;}
+.priority-row{display:flex;gap:8px;}
+.priority-btn{
+  flex:1;border-radius:12px;padding:10px 4px;font-size:12px;font-weight:700;
+  border:2px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;
+}
+
+.readonly-field .field-label{font-size:10px;font-weight:700;color:var(--muted);}
+.readonly-field .field-value{font-size:13px;font-weight:500;margin-top:2px;}
+
+/* ---------- Empty state ---------- */
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:52px 20px;gap:10px;text-align:center;color:var(--muted);width:100%;
+}
+.empty .empty-ic{
+  width:48px;height:48px;border-radius:99px;background:var(--primaryLight);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.empty p{font-size:12px;margin:0;max-width:220px;}
+.empty .link-btn{font-size:12px;margin-top:2px;}
+
+/* ---------- Menu rows (profile) ---------- */
+.menu-row{
+  display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;margin-bottom:8px;width:100%;font-size:13px;
+  font-weight:600;cursor:pointer;text-align:start;
+}
+.menu-row .menu-ic{font-size:16px;width:20px;text-align:center;}
+.menu-row.danger{color:var(--red);}
+.menu-row .menu-label{flex:1;}
+
+/* ---------- Assign / radio list ---------- */
+.radio-row{
+  display:flex;align-items:center;gap:12px;background:#fff;border-radius:12px;
+  padding:11px 14px;border:1px solid var(--border);cursor:pointer;margin-bottom:8px;
+}
+.radio-row.checked{border-color:var(--primary);}
+.radio-dot{
+  width:16px;height:16px;border-radius:99px;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.radio-row.checked .radio-dot{border-color:var(--primary);background:var(--primary);}
+.radio-dot .inner{width:6px;height:6px;border-radius:99px;background:#fff;display:none;}
+.radio-row.checked .inner{display:block;}
+
+/* ---------- Login role screen ---------- */
+.login-hero{
+  display:flex;flex-direction:column;align-items:center;padding:34px 16px 24px;
+  background:var(--primary);position:relative;flex-shrink:0;
+}
+.lang-toggle{
+  position:absolute;top:16px;inset-inline-start:16px;background:rgba(255,255,255,.15);
+  border:none;color:#fff;font-size:11px;font-weight:700;border-radius:10px;
+  padding:6px 10px;display:flex;align-items:center;gap:5px;cursor:pointer;
+}
+.hero-ic{
+  width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:24px;
+}
+.login-hero h1{color:#fff;font-weight:700;font-size:16px;margin:0;}
+.login-hero p{color:rgba(255,255,255,.72);font-size:11px;margin:4px 0 0;}
+.roles-title{font-size:13px;font-weight:700;margin:0 0 4px;padding-inline:20px;}
+.roles-list{display:flex;flex-direction:column;gap:10px;padding:16px 20px;}
+
+.avatar-circle{
+  width:64px;height:64px;border-radius:99px;display:flex;align-items:center;
+  justify-content:center;margin:0 auto 12px;font-size:26px;
+}
+.center-col{display:flex;flex-direction:column;align-items:center;}
+
+.banner-warning{
+  display:flex;align-items:center;gap:10px;background:var(--amberBg);border:1px solid #F5DDB0;
+  border-radius:12px;padding:11px 13px;cursor:pointer;width:100%;text-align:start;
+}
+.banner-warning .warn-text{font-size:11px;font-weight:700;color:#8a5a12;flex:1;}
+
+.setup-screen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;min-height:100dvh;padding:28px;text-align:center;gap:14px;background:var(--bg);
+}
+.setup-screen .big-ic{font-size:40px;}
+.setup-screen h2{margin:0;font-size:16px;}
+.setup-screen p{margin:0;font-size:13px;color:var(--muted);line-height:1.7;max-width:320px;}
+.setup-screen code{
+  background:#fff;border:1px solid var(--border);border-radius:8px;padding:2px 6px;
+  font-size:12px;direction:ltr;display:inline-block;
+}
+
+.repair-note-box{background:var(--greenBg);border-radius:12px;padding:12px;}
+.repair-note-box .rn-title{font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.repair-note-box .rn-text{font-size:12px;}
+
+.connecting-hint{
+  display:flex;align-items:center;gap:8px;background:var(--primaryLight);color:var(--primary);
+  font-size:11px;font-weight:600;padding:9px 13px;border-radius:10px;margin:10px 16px 0;
+}
+
+.gap8>*+*{margin-top:8px;}
+.gap10>*+*{margin-top:10px;}
+.gap12>*+*{margin-top:12px;}
+.gap14>*+*{margin-top:14px;}
+
+.text-center{text-align:center;}
+.muted{color:var(--muted);}
+.small{font-size:11px;}
+.bold{font-weight:700;}
+
+/* scrollbar tidy on desktop preview */
+.scroll::-webkit-scrollbar{width:0;height:0;}
+
+</style>
+</head>
+<body>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('تم تسجيل الـ Service Worker بنجاح!', reg))
+        .catch(err => console.log('فشل تسجيل الـ Service Worker: ', err));
+    });
+  }
+</script>
+
+<div id="app"></div>
+
+<script>
+/* ============================================================================
+   نظام صيانة المكيفات — نسخة أونلاين (بدون React / بدون JSX)
+   ----------------------------------------------------------------------------
+   هذا الملف مكتوب بجافاسكربت عادي (Vanilla JS) عن قصد حتى يسهل فتحه وتعديله
+   داخل تطبيقات مثل AIDE بدون الحاجة لأي أدوات بناء (build tools).
+
+   للتعديل السريع أكثر إشي بتحتاجه:
+     1) بيانات Firebase في FIREBASE_CONFIG بالأسفل مباشرة (اشرح كيف تجيبها
+        بملف "دليل الإعداد" المرفق).
+     2) كلمة مرور المدير بثابت MANAGER_PASSCODE.
+   ============================================================================ */
+
+// ---------------------------------------------------------------------------
+// 1) إعدادات Firebase — استبدل القيم التالية ببيانات مشروعك
+// ---------------------------------------------------------------------------
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAmxdtkiZ7hMx0xb7LpEDg7G4-SXJ2u9mk",
+  authDomain: "hivc-be880.firebaseapp.com",
+  databaseURL: "https://hivc-be880-default-rtdb.europe-west1.firebasedatabase.app/",
+  projectId: "hivc-be880",
+  storageBucket: "hivc-be880.firebasestorage.app",
+  messagingSenderId: "659425177244",
+  appId: "1:659425177244:web:6fbff146cfb99aa5cc8759"
+};
+
+// 🔑 مفتاح VAPID العام لإشعارات الـ Push — بدونه getToken() بيفشل دايماً.
+// تجيبه من: Firebase Console → ⚙️ إعدادات المشروع → تبويب Cloud Messaging
+// → Web configuration → Web Push certificates → Generate key pair
+const VAPID_KEY = "BBtSqNOjcYkGygPuEvxnl8Mqr_Yrqag3v6w-e9-sQ44YquzeKMHkd-pwNgoXl1APORBWfzkW881bWC4stWC29C8";
+
+// كلمة مرور دخول المدير (يمكنك تغييرها من هنا ف)
+const MANAGER_PASSCODE = "Radwan22";
+
+// ---------------------------------------------------------------------------
+// 2) قاموس الترجمة (عربي / إنجليزي)
+// ---------------------------------------------------------------------------
+const TR = {
+  ar: {
+    title: "تكييف سيراميك الرياض",
+    subtitle: "إدارة الأعطال بسهولة وكفاءة",
+    chooseRole: "اختر دورك",
+    user: "مستخدم",
+    userDesc: "لإبلاغ عن أي عطل تشاهده",
+    manager: "مدير",
+    managerDesc: "إدارة البلاغات وتعيين الفنيين",
+    tech: "فني صيانة",
+    techDesc: "استلام المهام وتنفيذ الإصلاح",
+    login: "تسجيل دخول",
+    name: "الاسم",
+    enterName: "أدخل اسمك",
+    passcode: "كود الدخول السري للمدير",
+    enterPasscode: "أدخل الكود السري للمدير",
+    wrongPasscode: "الكود السري غير صحيح!",
+    pendingApproval: "بانتظار موافقة المدير",
+    pendingDesc: "تم إرسال طلب تسجيلك للمدير. يرجى الانتظار حتى يتم السماح لك بالدخول. سيتم دخولك تلقائياً فور الموافقة.",
+    back: "رجوع",
+    home: "الرئيسية",
+    newReport: "بلاغ جديد",
+    addReportHint: "سجّل عطل ليتم تعيينه لفني لاحقاً",
+    myReports: "بلاغاتي",
+    profile: "الملف الشخصي",
+    appSettings: "إعدادات التطبيق",
+    aboutApp: "عن التطبيق",
+    logout: "تسجيل خروج",
+    welcome: "مرحباً",
+    reportSuccess: "تم إرسال البلاغ بنجاح",
+    reportSuccessDesc: "سيتم مراجعة البلاغ من قبل الإدارة وتحديد الفني المناسب",
+    reportNum: "رقم البلاغ",
+    backHome: "العودة للرئيسية",
+    viewMyReports: "عرض بلاغاتي",
+    selectDept: "اختر القسم",
+    probDesc: "وصف المشكلة",
+    probDescPlaceholder: "اكتب وصف المشكلة بالتفصيل...",
+    location: "موقع المشكلة (اختياري)",
+    locationPlaceholder: "اكتب الموقع...",
+    priority: "أولوية البلاغ",
+    sendReport: "إرسال البلاغ",
+    high: "عالية",
+    medium: "متوسطة",
+    low: "منخفضة",
+    status_pending: "بانتظار التعيين",
+    status_processing: "قيد التنفيذ",
+    status_done: "تم الإصلاح",
+    noReports: "لا يوجد بلاغات بعد",
+    managerDashboard: "لوحة تحكم المدير",
+    stat_pending: "بانتظار التعيين",
+    stat_progress: "قيد التنفيذ",
+    stat_done: "تم إصلاحها",
+    stat_total: "إجمالي البلاغات",
+    newFaults: "الأعطال الجديدة",
+    viewAll: "عرض الكل",
+    faultsLog: "سجل الأعطال",
+    reportDetails: "تفاصيل البلاغ",
+    deleteReport: "حذف البلاغ",
+    sender: "أرسله",
+    date: "تاريخ الإرسال",
+    assignTech: "تعيين فني الصيانة",
+    assignBtn: "تعيين الفني",
+    noActiveTechs: "لا يوجد فنيين مسجلين ومقبولين حالياً!",
+    techRequests: "طلبات الفنيين",
+    allow: "سماح",
+    reject: "رفض",
+    noRequests: "لا توجد طلبات انضمام معلقة",
+    myTasks: "مهامي الحالية",
+    history: "السجل",
+    taskDetails: "تفاصيل المهمة",
+    repairNote: "ملاحظة الإصلاح",
+    repairNotePlaceholder: "اكتب ماذا تم فعله لإصلاح العطل...",
+    startTask: "ابدأ المهمة",
+    taskTiming: "توقيت المهمة",
+    taskStartedAt: "بدأت الساعة",
+    taskCompletedAt: "انتهت الساعة",
+    taskDuration: "المدة",
+    notStartedYet: "لم تبدأ بعد",
+    autoDuration: "المدة المحسوبة تلقائياً",
+    hoursShort: "ساعات",
+    minutesShort: "دقائق",
+    saveDuration: "حفظ المدة",
+    allReportsShort: "الكل",
+    taskDoneBtn: "تم إصلاح العطل",
+    noTasks: "لا يوجد لديك مهام حالياً",
+    noCompletedTasks: "لم تُنهِ أي مهمة بعد",
+    manageDepts: "إدارة الأقسام",
+    addDept: "إضافة قسم جديد",
+    deptNamePlaceholder: "مثال: قسم الصيانة",
+    noDepts: "لم تتم إضافة أي قسم بعد",
+    noDeptsHint: "اضغط لإضافة الأقسام",
+    noDeptsUserMsg: "لم يقم المدير بإضافة أي قسم بعد. الرجاء المحاولة لاحقاً.",
+    delete: "حذف",
+    setupNeededTitle: "لم يتم إعداد الاتصال بالسيرفر بعد",
+    setupNeededDesc: "افتح ملف index.html وضع بيانات مشروع Firebase الخاص بك داخل FIREBASE_CONFIG في أعلى الملف. راجع ملف \"دليل الإعداد\" للخطوات كاملة.",
+    connectionTrouble: "الاتصال بالسيرفر يستغرق وقتاً أطول من المعتاد. تأكد من الإنترنت وإعدادات Firebase.",
+    recentReports: "آخر بلاغاتي",
+    tapNewReportHint: "اضغط لإرسال بلاغ جديد",
+    assignedTechLabel: "الفني المسؤول",
+    managerNoteLabel: "تعليمات المدير للفني (اختياري)",
+    managerNotePlaceholder: "اكتب أي توضيح إضافي للفني...",
+    managerNoteToTech: "تعليمات المدير",
+    summonTech: "استدعاء فني",
+    summonHint: "تكليف فني فوري بدون خطوات إضافية",
+    summonNoteLabel: "الموقع أو التعليمات",
+    summonNotePlaceholder: "اكتب الموقع، التعليمات، أو أي تفاصيل تفيد الفني...",
+    summonBtn: "استدعاء",
+    summonLog: "سجل الاستدعاءات",
+    noSummons: "لا يوجد استدعاءات بعد",
+    summonBy: "بواسطة",
+    notifySummonTitle: "تم استدعاؤك",
+    notifyNewReportTitle: "بلاغ عطل جديد",
+    notifyNewTaskTitle: "تم تكليفك بمهمة جديدة",
+    notifyTaskStartedTitle: "الفني بدأ المهمة",
+    notifyTaskDoneTitle: "الفني أنهى المهمة",
+    enableNotifications: "تفعيل الإشعارات",
+    notifSupportNote: "الإشعارات بتشتغل طالما المتصفح فاتح (ولو بالخلفية)، وما بتوصل إذا سكرت المتصفح كلياً.",
+  },
+  en: {
+    title: "Takyeef Seramik Al-Riyadh",
+    subtitle: "Manage breakdowns easily and efficiently",
+    chooseRole: "Select Your Role",
+    user: "User",
+    userDesc: "Report any breakdown you see",
+    manager: "Manager",
+    managerDesc: "Manage reports & assign technicians",
+    tech: "Technician",
+    techDesc: "Receive tasks and perform repairs",
+    login: "Login",
+    name: "Name",
+    enterName: "Enter your name",
+    passcode: "Manager Passcode",
+    enterPasscode: "Enter manager passcode",
+    wrongPasscode: "Incorrect passcode!",
+    pendingApproval: "Waiting for Approval",
+    pendingDesc: "Your registration request has been sent to the manager. Please wait for access approval. You'll be logged in automatically once approved.",
+    back: "Back",
+    home: "Home",
+    newReport: "New Report",
+    addReportHint: "Log a fault to assign to a technician later",
+    myReports: "My Reports",
+    profile: "Profile",
+    appSettings: "App Settings",
+    aboutApp: "About App",
+    logout: "Logout",
+    welcome: "Welcome",
+    reportSuccess: "Report Submitted Successfully",
+    reportSuccessDesc: "The administration will review the report and assign the appropriate technician",
+    reportNum: "Report ID",
+    backHome: "Back to Home",
+    viewMyReports: "View My Reports",
+    selectDept: "Select Department",
+    probDesc: "Problem Description",
+    probDescPlaceholder: "Write the problem details...",
+    location: "Location (Optional)",
+    locationPlaceholder: "Enter location...",
+    priority: "Report Priority",
+    sendReport: "Send Report",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+    status_pending: "Pending Assignment",
+    status_processing: "In Progress",
+    status_done: "Repaired",
+    noReports: "No reports yet",
+    managerDashboard: "Manager Dashboard",
+    stat_pending: "Pending",
+    stat_progress: "In Progress",
+    stat_done: "Repaired",
+    stat_total: "Total Reports",
+    newFaults: "New Faults",
+    viewAll: "View All",
+    faultsLog: "Faults Log",
+    reportDetails: "Report Details",
+    deleteReport: "Delete Report",
+    sender: "Reported By",
+    date: "Date Sent",
+    assignTech: "Assign Technician",
+    assignBtn: "Assign Tech",
+    noActiveTechs: "No registered & approved technicians available!",
+    techRequests: "Tech Requests",
+    allow: "Allow",
+    reject: "Reject",
+    noRequests: "No pending join requests",
+    myTasks: "Current Tasks",
+    history: "History",
+    taskDetails: "Task Details",
+    repairNote: "Repair Note",
+    repairNotePlaceholder: "Describe what was done to fix the issue...",
+    startTask: "Start Task",
+    taskTiming: "Task Timing",
+    taskStartedAt: "Started at",
+    taskCompletedAt: "Completed at",
+    taskDuration: "Duration",
+    notStartedYet: "Not started yet",
+    autoDuration: "Auto-calculated duration",
+    hoursShort: "hrs",
+    minutesShort: "min",
+    saveDuration: "Save Duration",
+    allReportsShort: "All",
+    taskDoneBtn: "Mark as Fixed",
+    noTasks: "No active tasks at the moment",
+    noCompletedTasks: "No completed tasks yet",
+    manageDepts: "Manage Departments",
+    addDept: "Add New Department",
+    deptNamePlaceholder: "e.g. Maintenance Dept",
+    noDepts: "No departments added yet",
+    noDeptsHint: "Tap to add departments",
+    noDeptsUserMsg: "The manager hasn't added any department yet. Please try again later.",
+    delete: "Delete",
+    setupNeededTitle: "Server connection isn't set up yet",
+    setupNeededDesc: "Open index.html and put your Firebase project details inside FIREBASE_CONFIG at the top of the file. See the \"Setup Guide\" file for full steps.",
+    connectionTrouble: "Connecting is taking longer than usual. Check your internet connection and Firebase settings.",
+    recentReports: "Recent Reports",
+    tapNewReportHint: "Tap to send a new report",
+    assignedTechLabel: "Assigned Technician",
+    managerNoteLabel: "Manager's Instructions for Technician (optional)",
+    managerNotePlaceholder: "Write any extra instructions for the technician...",
+    managerNoteToTech: "Manager's Instructions",
+    summonTech: "Summon Technician",
+    summonHint: "Instantly dispatch a technician, no extra steps",
+    summonNoteLabel: "Location or Instructions",
+    summonNotePlaceholder: "Write the location, instructions, or any useful details...",
+    summonBtn: "Summon",
+    summonLog: "Summon Log",
+    noSummons: "No summons yet",
+    summonBy: "By",
+    notifySummonTitle: "You've been summoned",
+    notifyNewReportTitle: "New Fault Report",
+    notifyNewTaskTitle: "You've been assigned a new task",
+    notifyTaskStartedTitle: "Technician started the task",
+    notifyTaskDoneTitle: "Technician completed the task",
+    enableNotifications: "Enable Notifications",
+    notifSupportNote: "Notifications work while the browser is open (even in background), but won't arrive if the browser is fully closed.",
+  }
+};
+
+function t(key){
+  const dict = TR[state.lang] || TR.ar;
+  return dict[key] || key;
+}
+
+// ---------------------------------------------------------------------------
+// 3) الحالة العامة للتطبيق (State)
+// ---------------------------------------------------------------------------
+const state = {
+  lang: 'ar',
+  screen: 'role',        // role | login | pending
+  selectedRole: null,
+  nameInput: '',
+  passcodeInput: '',
+  loginError: '',
+  connectionSlow: false,
+  _pendingName: null,
+  _loaded: { departments:false, reports:false, techRequests:false, activeTechs:false, summons:false },
+
+  user: null,             // { role: 'user'|'manager'|'tech', name }
+  tab: null,
+  selected: null,         // البلاغ المفتوح حالياً
+  assignPicks: [],        // أسماء الفنيين المختارين حالياً (تعيين/استدعاء)
+  assignNote: '',
+  repairNote: '',
+  justSubmittedId: null,
+  deptInput: '',
+  showDeptManager: false,
+  showSummon: false,
+  showSummonLog: false,
+  reportsListMode: 'all', // 'mine' | 'all' — لتبويب سجل الأعطال
+
+  newReport: { department:'', description:'', location:'', priority:'medium' },
+
+  departments: [],
+  reports: [],
+  techRequests: [],
+  activeTechs: [],
+  summons: [],
+};
+
+// ---------------------------------------------------------------------------
+// 4) أدوات مساعدة عامة
+// ---------------------------------------------------------------------------
+function esc(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// نفس esc لكن مخصص لتضمين نص داخل onclick='...' (سلسلة جافاسكربت)
+function escJs(str){
+  return String(str == null ? '' : str)
+    .replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function newId(prefix){
+  return prefix + Date.now() + Math.random().toString(36).slice(2,7);
+}
+function sortedByTsAsc(arr){ return arr.slice().sort(function(a,b){ return (a.ts||0)-(b.ts||0); }); }
+function sortedByTsDesc(arr){ return arr.slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); }); }
+function objToArr(obj){
+  if (!obj) return [];
+  return Object.keys(obj).map(function(id){
+    const copy = Object.assign({}, obj[id]);
+    copy.id = id;
+    return copy;
+  });
+}
+function fmtDate(){
+  const d = new Date();
+  const h = d.getHours();
+  const displayH = (h % 12) === 0 ? 12 : (h % 12);
+  const m = String(d.getMinutes()).padStart(2,'0');
+  const suffix = state.lang === 'ar' ? (h >= 12 ? 'م' : 'ص') : (h >= 12 ? 'PM' : 'AM');
+  return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear() + ' - ' + displayH + ':' + m + ' ' + suffix;
+}
+function chevForward(){ return state.lang === 'ar' ? '‹' : '›'; }
+function chevBack(){ return state.lang === 'ar' ? '›' : '‹'; }
+
+function statusMeta(code){
+  if (code === 'done') return { fg:'var(--green)', bg:'var(--greenBg)', text:t('status_done') };
+  if (code === 'in_progress') return { fg:'var(--amber)', bg:'var(--amberBg)', text:t('status_processing') };
+  return { fg:'var(--amber)', bg:'var(--amberBg)', text:t('status_pending') };
+}
+function priorityMeta(code){
+  if (code === 'high') return { fg:'var(--red)', bg:'var(--redBg)', text:t('high') };
+  if (code === 'low') return { fg:'var(--green)', bg:'var(--greenBg)', text:t('low') };
+  return { fg:'var(--amber)', bg:'var(--amberBg)', text:t('medium') };
+}
+// يرجع قائمة أسماء الفنيين المعينين على البلاغ — يدعم الحقل الجديد
+// assignedTechs (مصفوفة) والحقل القديم assignedTo (اسم واحد) للتوافق
+// مع البلاغات المنشأة قبل ميزة تعدد الفنيين
+function getAssignedTechs(r){
+  if (r.assignedTechs && r.assignedTechs.length) return r.assignedTechs;
+  if (r.assignedTo) return [r.assignedTo];
+  return [];
+}
+// يعرض وقت (H:MM ص/م) من timestamp — بنفس أسلوب fmtDate تماماً
+function formatClock(ts){
+  if (!ts) return '';
+  const d = new Date(ts);
+  const h = d.getHours();
+  const displayH = (h % 12) === 0 ? 12 : (h % 12);
+  const m = String(d.getMinutes()).padStart(2,'0');
+  const suffix = state.lang === 'ar' ? (h >= 12 ? 'م' : 'ص') : (h >= 12 ? 'PM' : 'AM');
+  return displayH + ':' + m + ' ' + suffix;
+}
+// يعرض مدة (بالميلي ثانية) بصيغة "1h 23m" أو "45m"
+function formatDuration(ms){
+  if (ms == null || isNaN(ms) || ms < 0) return '';
+  const totalMin = Math.round(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? (h + 'h ' + m + 'm') : (m + 'm');
+}
+
+// ---------------------------------------------------------------------------
+// 5) الاتصال بـ Firebase (قراءة وكتابة البيانات أونلاين)
+// ---------------------------------------------------------------------------
+let db = null;
+let firebaseOK = false;
+let connectTimer = null;
+
+function initFirebase(){
+  const looksConfigured =
+    FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('ضع') === -1 &&
+    FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL.indexOf('ضع') === -1;
+  if (!looksConfigured){ firebaseOK = false; return; }
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    firebaseOK = true;
+    attachListeners();
+    attachForegroundMessageHandler();
+    connectTimer = setTimeout(function(){
+      const L = state._loaded;
+      if (!L.departments && !L.reports && !L.techRequests && !L.activeTechs){
+        state.connectionSlow = true;
+        render();
+      }
+    }, 9000);
+  } catch(e){
+    console.error('Firebase init error:', e);
+    firebaseOK = false;
+  }
+}
+function clearConnectTimer(){
+  if (connectTimer){ clearTimeout(connectTimer); connectTimer = null; }
+  state.connectionSlow = false;
+}
+function attachListeners(){
+  db.ref('departments').on('value', function(snap){
+    state.departments = sortedByTsAsc(objToArr(snap.val()));
+    state._loaded.departments = true;
+    clearConnectTimer();
+    render();
+  });
+  db.ref('reports').on('value', function(snap){
+    const newReports = sortedByTsDesc(objToArr(snap.val()));
+
+    // ملاحظة: كانت هنا مقارنة يدوية (قديم/جديد) تطلق notify() المحلي.
+    // تم حذفها لأنها تسبب إشعار مكرر مع الـ Push الحقيقي الجديد (عبر
+    // notifyAllManagers/notifyTech)، ولأنها أصلاً ما كانت تشتغل إلا وقت
+    // ما يكون التبويب مفتوح — عكس الهدف المطلوب (وصول الإشعار والمتصفح مقفل).
+
+    state.reports = newReports;
+    if (state.selected){
+      let upd = null;
+      for (let i=0;i<state.reports.length;i++){ if (state.reports[i].id === state.selected.id) upd = state.reports[i]; }
+      state.selected = upd;
+    }
+    state._loaded.reports = true;
+    clearConnectTimer();
+    render();
+  });
+  db.ref('summons').on('value', function(snap){
+    state.summons = sortedByTsDesc(objToArr(snap.val()));
+    state._loaded.summons = true;
+    clearConnectTimer();
+    render();
+  });
+  db.ref('techRequests').on('value', function(snap){
+    state.techRequests = sortedByTsAsc(objToArr(snap.val()));
+    state._loaded.techRequests = true;
+    clearConnectTimer();
+    render();
+  });
+  db.ref('activeTechs').on('value', function(snap){
+    state.activeTechs = sortedByTsAsc(objToArr(snap.val()));
+    state._loaded.activeTechs = true;
+    clearConnectTimer();
+    if (state.screen === 'pending' && state._pendingName){
+      const found = state.activeTechs.some(function(x){ return x.name === state._pendingName; });
+      if (found){
+        const nm = state._pendingName;
+        state._pendingName = null;
+        completeLogin('tech', nm);
+        return;
+      }
+    }
+    render();
+  });
+}
+function fbSet(path, val){
+  if (!db) return;
+  db.ref(path).set(val).catch(function(e){ console.error('Firebase set error', path, e); });
+}
+function fbUpdate(path, patch){
+  if (!db) return;
+  db.ref(path).update(patch).catch(function(e){ console.error('Firebase update error', path, e); });
+}
+function fbRemove(path){
+  if (!db) return;
+  db.ref(path).remove().catch(function(e){ console.error('Firebase remove error', path, e); });
+}
+
+// ---------------------------------------------------------------------------
+// 5.1) حفظ جلسة الدخول محلياً (حتى ما يضطر يسجل دخول كل مرة يفتح الموقع)
+// ---------------------------------------------------------------------------
+const SESSION_KEY = 'ac_maintenance_session_v1';
+function saveSession(user){
+  try{ localStorage.setItem(SESSION_KEY, JSON.stringify(user)); }catch(e){}
+}
+function loadSession(){
+  try{
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (obj && obj.role && obj.name) return obj;
+    return null;
+  }catch(e){ return null; }
+}
+function clearSession(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+}
+
+// ---------------------------------------------------------------------------
+// 5.2) إشعارات Push حقيقية (تصل حتى لو المتصفح مقفل تماماً — راجع الشرح
+//      اللي أرسلته مع الملفات بخصوص اختلاف هذا بين أندرويد/آيفون/الكمبيوتر)
+// ---------------------------------------------------------------------------
+let fcmMessaging = null;
+function getMessagingInstance(){
+  if (!firebaseOK) return null;
+  if (!fcmMessaging){
+    try{ fcmMessaging = firebase.messaging(); }catch(e){ console.error('messaging init error', e); return null; }
+  }
+  return fcmMessaging;
+}
+// يحوّل الاسم إلى مفتاح صالح للتخزين في Firebase (ممنوع فيه . # $ [ ] /)
+function sanitizeKey(str){
+  return String(str||'').trim().replace(/[.#$\[\]\/]/g, '_');
+}
+function requestNotifyPermission(){
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default'){
+    try{
+      Notification.requestPermission().then(function(perm){
+        if (perm === 'granted') registerPushToken();
+      });
+    }catch(e){}
+  } else if (Notification.permission === 'granted'){
+    registerPushToken();
+  }
+}
+// يطلب توكن FCM من المتصفح ويخزّنه بقاعدة البيانات تحت دور واسم المستخدم
+// الحالي، عشان أي شخص ثاني يقدر يرسل له إشعار لاحقاً حتى لو مقفل المتصفح.
+function registerPushToken(){
+  if (!state.user) return;
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!VAPID_KEY || VAPID_KEY.indexOf('ضع') !== -1){
+    console.warn('⚠️ VAPID_KEY غير مضبوط في index.html — لن تصل إشعارات Push حقيقية حتى تضيفه.');
+    return;
+  }
+  const messaging = getMessagingInstance();
+  if (!messaging) return;
+  navigator.serviceWorker.ready.then(function(reg){
+    // نمرر تسجيل الـ Service Worker يدوياً لأن اسم ملفنا sw.js وليس
+    // الاسم الافتراضي الي تتوقعه Firebase (firebase-messaging-sw.js)
+    return messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+  }).then(function(token){
+    if (!token || !db || !state.user) return;
+    const role = state.user.role;
+    const key = sanitizeKey(state.user.name);
+    if (!key) return;
+    fbSet('pushTokens/' + role + '/' + key, { token: token, name: state.user.name, updatedAt: Date.now() });
+  }).catch(function(err){
+    console.error('تعذر الحصول على توكن الإشعارات:', err);
+  });
+}
+// يستقبل رسائل Push وقت ما التطبيق مفتوح فعلياً قدام المستخدم (foreground) —
+// بدون هذا المستمع، رسائل الـ data-only ما تظهر أبداً والتبويب مفتوح.
+function attachForegroundMessageHandler(){
+  const messaging = getMessagingInstance();
+  if (!messaging) return;
+  messaging.onMessage(function(payload){
+    const d = payload.data || {};
+    if (d.title) notify(d.title, d.body || '');
+  });
+}
+// يرسل إشعار Push حقيقي لتوكن واحد عبر /api/send-notification
+function sendPush(token, title, body){
+  if (!token) return;
+  fetch('/api/send-notification', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: token, title: title, body: body })
+  }).catch(function(e){ console.error('فشل إرسال الإشعار:', e); });
+}
+// يرسل إشعار لكل المدراء اللي عندهم توكن محفوظ
+function notifyAllManagers(title, body){
+  if (!db) return;
+  db.ref('pushTokens/manager').once('value').then(function(snap){
+    const val = snap.val() || {};
+    Object.keys(val).forEach(function(k){ sendPush(val[k].token, title, body); });
+  }).catch(function(e){ console.error(e); });
+}
+// يرسل إشعار لفني معيّن بالاسم
+function notifyTech(name, title, body){
+  if (!db || !name) return;
+  db.ref('pushTokens/tech/' + sanitizeKey(name)).once('value').then(function(snap){
+    const val = snap.val();
+    if (val && val.token) sendPush(val.token, title, body);
+  }).catch(function(e){ console.error(e); });
+}
+// يرسل إشعار لأي شخص بالاسم تحت أي دور (user/manager/tech) — تُستخدم
+// لإشعار صاحب البلاغ الأصلي (سواء مستخدم عادي أو مدير) عند إنهاء المهمة
+function notifyPerson(role, name, title, body){
+  if (!db || !role || !name) return;
+  db.ref('pushTokens/' + role + '/' + sanitizeKey(name)).once('value').then(function(snap){
+    const val = snap.val();
+    if (val && val.token) sendPush(val.token, title, body);
+  }).catch(function(e){ console.error(e); });
+}
+function notify(title, body){
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  const opts = { body: body, icon: './ic_launcher.png', dir: state.lang==='ar' ? 'rtl' : 'ltr' };
+  if (navigator.serviceWorker && navigator.serviceWorker.ready){
+    navigator.serviceWorker.ready.then(function(reg){
+      if (reg && reg.showNotification) reg.showNotification(title, opts);
+      else new Notification(title, opts);
+    }).catch(function(){
+      try{ new Notification(title, opts); }catch(e){}
+    });
+  } else {
+    try{ new Notification(title, opts); }catch(e){}
+  }
+}
+function truncateText(str, n){
+  str = String(str||'');
+  return str.length > n ? str.slice(0,n) + '…' : str;
+}
+
+// ---------------------------------------------------------------------------
+// 6) عناصر واجهة مشتركة (Components) - كل واحدة بترجع نص HTML
+// ---------------------------------------------------------------------------
+function Header(title, onBackJS, rightHtml){
+  return '' +
+  '<div class="header">' +
+    '<div class="header-left">' +
+      (onBackJS ? '<button class="back-btn" onclick="' + onBackJS + '">' + chevBack() + '</button>' : '') +
+      '<span class="header-title">' + esc(title) + '</span>' +
+    '</div>' +
+    (rightHtml || '<span></span>') +
+  '</div>';
+}
+function BottomNav(items, activeKey){
+  return '<div class="bottom-nav">' + items.map(function(it){
+    return '' +
+    '<button class="nav-item ' + (it.key===activeKey?'active':'') + '" onclick="setTab(\'' + it.key + '\')">' +
+      '<span class="nav-ic">' + it.ic + '</span>' +
+      '<span class="nav-label">' + esc(it.label) + '</span>' +
+      (it.badge ? '<span class="nav-badge">' + it.badge + '</span>' : '') +
+    '</button>';
+  }).join('') + '</div>';
+}
+function Badge(text, bg, fg){
+  return '<span class="badge" style="background:' + bg + ';color:' + fg + ';">' + esc(text) + '</span>';
+}
+function ReportCard(r, showAssignedTech){
+  const sm = statusMeta(r.status);
+  const pm = priorityMeta(r.priority);
+  const num = String(r.ts || 0).slice(-4);
+  const techs = getAssignedTechs(r);
+  return '' +
+  '<button class="report-card" onclick="openReport(\'' + r.id + '\')">' +
+    '<div class="row-between">' + Badge(sm.text, sm.bg, sm.fg) + '<span class="idnum">#' + num + '</span></div>' +
+    '<div class="dept">' + esc(r.department) + '</div>' +
+    '<div class="desc">' + esc(r.description) + '</div>' +
+    '<div class="meta-row">' +
+      '<span class="datestamp">' + esc(r.createdAt) + '</span>' +
+      '<span class="prio"><span class="dot" style="background:' + pm.fg + '"></span>' +
+      '<span class="small bold" style="color:' + pm.fg + '">' + esc(pm.text) + '</span></span>' +
+    '</div>' +
+    (showAssignedTech && techs.length ? '<div class="assigned-line">' + esc(t('tech')) + ': ' + esc(techs.join('، ')) + '</div>' : '') +
+  '</button>';
+}
+function FieldRO(label, value){
+  return '<div class="readonly-field"><div class="field-label">' + esc(label) + '</div><div class="field-value">' + esc(value) + '</div></div>';
+}
+function EmptyState(text, actionLabel, actionJS){
+  return '' +
+  '<div class="empty">' +
+    '<div class="empty-ic">📄</div>' +
+    '<p>' + esc(text) + '</p>' +
+    (actionLabel ? '<button class="link-btn" onclick="' + actionJS + '">' + esc(actionLabel) + '</button>' : '') +
+  '</div>';
+}
+function MenuRow(icon, label, onJS, danger){
+  return '<button class="menu-row ' + (danger?'danger':'') + '" onclick="' + onJS + '"><span class="menu-ic">' + icon + '</span><span class="menu-label">' + esc(label) + '</span></button>';
+}
+function StatCard(label, value, color){
+  return '<div class="stat-card"><div class="stat-val" style="color:' + color + '">' + value + '</div><div class="stat-label">' + esc(label) + '</div></div>';
+}
+
+// ---------------------------------------------------------------------------
+// 7) شاشة الإعداد الناقص (Firebase غير مهيأ)
+// ---------------------------------------------------------------------------
+function buildSetupScreen(){
+  return '' +
+  '<div class="setup-screen">' +
+    '<div class="big-ic">🛠️</div>' +
+    '<h2>' + esc(t('setupNeededTitle')) + '</h2>' +
+    '<p>' + esc(t('setupNeededDesc')) + '</p>' +
+    '<code>FIREBASE_CONFIG</code>' +
+  '</div>';
+}
+
+// ---------------------------------------------------------------------------
+// 8) شاشات تسجيل الدخول
+// ---------------------------------------------------------------------------
+function roleColorBg(key){
+  if (key === 'manager') return 'rgba(240,168,60,.15)';
+  if (key === 'tech') return 'rgba(47,168,79,.15)';
+  return 'rgba(27,75,122,.15)';
+}
+function buildRoleScreen(){
+  const roles = [
+    { key:'user', label:t('user'), desc:t('userDesc'), ic:'👤' },
+    { key:'manager', label:t('manager'), desc:t('managerDesc'), ic:'👥' },
+    { key:'tech', label:t('tech'), desc:t('techDesc'), ic:'🔧' },
+  ];
+  return '' +
+  '<div class="screen">' +
+    '<div class="login-hero">' +
+      '<button class="lang-toggle" onclick="switchLang()">🌐 ' + (state.lang==='ar' ? 'English' : 'العربية') + '</button>' +
+      '<div class="hero-ic">🔧</div>' +
+      '<h1>' + esc(t('title')) + '</h1>' +
+      '<p>' + esc(t('subtitle')) + '</p>' +
+    '</div>' +
+    '<div class="roles-title bold" style="margin-top:14px;">' + esc(t('chooseRole')) + '</div>' +
+    '<div class="roles-list">' +
+      roles.map(function(r){
+        return '' +
+        '<button class="role-card" onclick="selectRole(\'' + r.key + '\')">' +
+          '<div class="role-ic" style="background:' + roleColorBg(r.key) + '">' + r.ic + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div class="role-title">' + esc(r.label) + '</div>' +
+            '<div class="role-desc">' + esc(r.desc) + '</div>' +
+          '</div>' +
+          '<span class="chev">' + chevForward() + '</span>' +
+        '</button>';
+      }).join('') +
+    '</div>' +
+  '</div>';
+}
+function buildLoginScreen(){
+  const role = state.selectedRole;
+  const roleIcon = role==='manager' ? '👥' : (role==='tech' ? '🔧' : '👤');
+  const canSubmit = state.nameInput.trim().length>0 && (role!=='manager' || state.passcodeInput.length>0);
+  return '' +
+  '<div class="screen">' +
+    Header(t('login'), "setScreen('role')") +
+    '<div class="scroll px16 pt16">' +
+      '<div class="center-col" style="margin-bottom:20px;">' +
+        '<div class="avatar-circle" style="background:var(--primaryLight);">' + roleIcon + '</div>' +
+      '</div>' +
+      '<div class="field-block">' +
+        '<label class="field-label">' + esc(t('name')) + '</label>' +
+        '<input class="input" type="text" value="' + esc(state.nameInput) + '" placeholder="' + esc(t('enterName')) + '" ' +
+          'oninput="state.nameInput=this.value; refreshLoginBtn();" ' +
+          'onkeydown="if(event.key===\'Enter\'){doLogin();}" />' +
+      '</div>' +
+      (role==='manager' ? (
+        '<div class="field-block">' +
+          '<label class="field-label">' + esc(t('passcode')) + '</label>' +
+          '<input class="input" type="password" value="' + esc(state.passcodeInput) + '" placeholder="' + esc(t('enterPasscode')) + '" ' +
+            'oninput="state.passcodeInput=this.value; state.loginError=\'\'; refreshLoginBtn(); refreshLoginError();" ' +
+            'onkeydown="if(event.key===\'Enter\'){doLogin();}" />' +
+          '<p class="small" style="color:var(--red);font-weight:700;margin-top:6px;min-height:14px;" id="loginErrEl">' + esc(state.loginError) + '</p>' +
+        '</div>'
+      ) : '') +
+      '<button class="btn-primary" id="loginBtnEl" ' + (canSubmit?'':'disabled') + ' onclick="doLogin()" style="margin-top:6px;">' + esc(t('login')) + '</button>' +
+    '</div>' +
+  '</div>';
+}
+function refreshLoginBtn(){
+  const role = state.selectedRole;
+  const can = state.nameInput.trim().length>0 && (role!=='manager' || state.passcodeInput.length>0);
+  const btn = document.getElementById('loginBtnEl');
+  if (btn) btn.disabled = !can;
+}
+function refreshLoginError(){
+  const el = document.getElementById('loginErrEl');
+  if (el) el.textContent = state.loginError;
+}
+function buildPendingScreen(){
+  return '' +
+  '<div class="screen">' +
+    Header(t('pendingApproval'), "setScreen('role')") +
+    '<div class="scroll center-col" style="justify-content:center;flex:1;padding:24px;text-align:center;">' +
+      '<div class="avatar-circle" style="background:var(--amberBg);">⏰</div>' +
+      '<p class="bold">' + esc(t('pendingApproval')) + '</p>' +
+      '<p class="muted small">' + esc(t('pendingDesc')) + '</p>' +
+    '</div>' +
+    '<div class="px16" style="padding-bottom:16px;">' +
+      '<button class="btn-primary" onclick="setScreen(\'role\')">' + esc(t('back')) + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ---------------------------------------------------------------------------
+// 9) تطبيق "المستخدم" (الإبلاغ عن الأعطال)
+// ---------------------------------------------------------------------------
+function buildUserApp(){
+  const u = state.user;
+  const myReports = state.reports.filter(function(r){ return r.createdByName === u.name; });
+  const navItems = [
+    { key:'home', label:t('home'), ic:'🏠' },
+    { key:'new', label:t('newReport'), ic:'➕' },
+    { key:'mine', label:t('myReports'), ic:'📄' },
+    { key:'profile', label:t('profile'), ic:'👤' },
+  ];
+
+  if (state.tab === 'submitted'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('reportSuccess'), null) +
+      '<div class="scroll center-col" style="flex:1;justify-content:center;padding:24px;text-align:center;">' +
+        '<div class="avatar-circle" style="background:var(--greenBg);">✅</div>' +
+        '<p class="bold">' + esc(t('reportSuccess')) + '</p>' +
+        '<p class="muted small">' + esc(t('reportSuccessDesc')) + '</p>' +
+        '<div class="card" style="text-align:center;background:var(--greenBg);border:none;margin-top:8px;">' +
+          '<div class="small muted">' + esc(t('reportNum')) + '</div>' +
+          '<div class="bold" style="color:var(--green)">#' + esc(String(state.justSubmittedId||'').slice(-4)) + '</div>' +
+        '</div>' +
+        '<div style="width:100%;margin-top:14px;" class="gap8">' +
+          '<button class="btn-primary" onclick="setTab(\'home\')">' + esc(t('backHome')) + '</button>' +
+          '<button class="btn-outline" onclick="setTab(\'mine\')">' + esc(t('viewMyReports')) + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  if (state.tab === 'new'){ return buildNewReportScreen(); }
+
+  if (state.selected){ return buildReportDetailReadOnly(state.selected); }
+
+  if (state.tab === 'profile'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('profile'), null) +
+      '<div class="scroll px16 pt16 center-col">' +
+        '<div class="avatar-circle" style="background:var(--primaryLight);">👤</div>' +
+        '<div class="bold">' + esc(u.name) + '</div>' +
+        '<div class="muted small" style="margin-bottom:16px;">' + esc(t('user')) + '</div>' +
+        '<div style="width:100%;">' +
+          MenuRow('🔔', t('enableNotifications'), 'requestNotifyPermission()') +
+          MenuRow('⚙️', t('appSettings'), 'void(0)') +
+          MenuRow('ℹ️', t('aboutApp'), 'void(0)') +
+          MenuRow('🚪', t('logout'), 'doLogout()', true) +
+        '</div>' +
+      '</div>' +
+      BottomNav(navItems,'profile') +
+    '</div>';
+  }
+
+  if (state.tab === 'mine'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('myReports'), null) +
+      '<div class="scroll px16 pt16 gap10">' +
+        (myReports.length===0 ? EmptyState(t('noReports')) : myReports.map(function(r){ return ReportCard(r,false); }).join('')) +
+      '</div>' +
+      BottomNav(navItems,'mine') +
+    '</div>';
+  }
+
+  // home (default)
+  return '' +
+  '<div class="screen">' +
+    '<div class="top-banner">' +
+      '<div class="greet">' + esc(t('welcome')) + ' 👋</div>' +
+      '<div class="name">' + esc(u.name) + '</div>' +
+    '</div>' +
+    '<div class="scroll px16 pt16 gap12">' +
+      '<button class="card" style="background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;border:none;" onclick="setTab(\'new\')">' +
+        '<div>' +
+          '<div class="bold" style="font-size:14px;">' + esc(t('newReport')) + '</div>' +
+          '<div class="small" style="color:rgba(255,255,255,.75);margin-top:2px;">' + esc(t('tapNewReportHint')) + '</div>' +
+        '</div>' +
+        '<span style="font-size:20px;">➕</span>' +
+      '</button>' +
+      '<div class="row-between" style="display:flex;">' +
+        '<span class="bold small">' + esc(t('recentReports')) + '</span>' +
+        '<button class="link-btn" onclick="setTab(\'mine\')">' + esc(t('viewAll')) + '</button>' +
+      '</div>' +
+      (myReports.length===0 ? EmptyState(t('noReports')) : myReports.slice(0,3).map(function(r){ return ReportCard(r,false); }).join('')) +
+    '</div>' +
+    BottomNav(navItems,'home') +
+  '</div>';
+}
+function buildNewReportScreen(){
+  const backTab = state.user.role === 'manager' ? 'dashboard' : 'home';
+  if (state.departments.length === 0){
+    return '' +
+    '<div class="screen">' +
+      Header(t('newReport'), "setTab('" + backTab + "')") +
+      (state.user.role === 'manager' ?
+        EmptyState(t('noDepts'), t('manageDepts'), 'openDeptManager()') :
+        EmptyState(t('noDeptsUserMsg'))) +
+    '</div>';
+  }
+  const nr = state.newReport;
+  const valid = nr.department && nr.description.trim().length>2;
+  const priorities = [ {code:'high',label:t('high')}, {code:'medium',label:t('medium')}, {code:'low',label:t('low')} ];
+  return '' +
+  '<div class="screen">' +
+    Header(t('newReport'), "setTab('" + backTab + "')") +
+    '<div class="scroll px16 pt16">' +
+      '<div class="field-block">' +
+        '<label class="field-label">' + esc(t('selectDept')) + '</label>' +
+        '<select class="select" onchange="state.newReport.department=this.value; refreshNewReportBtn();">' +
+          '<option value="">' + esc(t('selectDept')) + '</option>' +
+          state.departments.map(function(d){
+            return '<option value="' + esc(d.name) + '" ' + (nr.department===d.name?'selected':'') + '>' + esc(d.name) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>' +
+      '<div class="field-block">' +
+        '<label class="field-label">' + esc(t('probDesc')) + '</label>' +
+        '<textarea class="textarea" rows="4" placeholder="' + esc(t('probDescPlaceholder')) + '" ' +
+          'oninput="state.newReport.description=this.value; refreshNewReportBtn();">' + esc(nr.description) + '</textarea>' +
+      '</div>' +
+      '<div class="field-block">' +
+        '<label class="field-label">📍 ' + esc(t('location')) + '</label>' +
+        '<input class="input" type="text" value="' + esc(nr.location) + '" placeholder="' + esc(t('locationPlaceholder')) + '" ' +
+          'oninput="state.newReport.location=this.value;" />' +
+      '</div>' +
+      '<div class="field-block">' +
+        '<label class="field-label">' + esc(t('priority')) + '</label>' +
+        '<div class="priority-row">' +
+          priorities.map(function(p){
+            const meta = priorityMeta(p.code);
+            const active = nr.priority===p.code;
+            const st = active ? ('border-color:'+meta.fg+';background:'+meta.bg+';color:'+meta.fg+';') : '';
+            return '<button type="button" class="priority-btn" style="'+st+'" onclick="state.newReport.priority=\''+p.code+'\'; render();">' + esc(p.label) + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="px16" style="padding-bottom:16px;">' +
+      '<button class="btn-primary" id="submitReportBtn" ' + (valid?'':'disabled') + ' onclick="submitNewReport()">📨 ' + esc(t('sendReport')) + '</button>' +
+    '</div>' +
+  '</div>';
+}
+function refreshNewReportBtn(){
+  const nr = state.newReport;
+  const valid = nr.department && nr.description.trim().length>2;
+  const btn = document.getElementById('submitReportBtn');
+  if (btn) btn.disabled = !valid;
+}
+function submitNewReport(){
+  const nr = state.newReport;
+  if (!nr.department || nr.description.trim().length<=2) return;
+  const id = newId('r');
+  const report = {
+    department: nr.department,
+    description: nr.description.trim(),
+    location: nr.location.trim(),
+    priority: nr.priority,
+    status: 'pending',
+    createdByName: state.user.name,
+    createdByRole: state.user.role, // نحتاجه لاحقاً لمعرفة أين نبحث عن توكن صاحب البلاغ
+    assignedTo: null,
+    createdAt: fmtDate(),
+    note: '',
+    ts: Date.now(),
+  };
+  fbSet('reports/'+id, report);
+  notifyAllManagers(t('notifyNewReportTitle'), report.department + ' — ' + truncateText(report.description, 60));
+  state.newReport = { department:'', description:'', location:'', priority:'medium' };
+  if (state.user.role === 'manager'){
+    // المدير يرجع مباشرة لقائمة الأعطال الجديدة (ما يحتاج شاشة "تم الإرسال")
+    state.tab = 'new';
+  } else {
+    state.justSubmittedId = id;
+    state.tab = 'submitted';
+  }
+  render();
+}
+function buildReportDetailReadOnly(r){
+  const sm = statusMeta(r.status);
+  const pm = priorityMeta(r.priority);
+  const techs = getAssignedTechs(r);
+  return '' +
+  '<div class="screen">' +
+    Header(t('reportDetails'), "closeReport()") +
+    '<div class="scroll px16 pt16 gap14">' +
+      '<div class="row-between" style="display:flex;">' +
+        '<span class="small bold muted">' + esc(t('reportNum')) + ' #' + esc(String(r.ts||0).slice(-4)) + '</span>' +
+        Badge(sm.text, sm.bg, sm.fg) +
+      '</div>' +
+      FieldRO(t('selectDept'), r.department) +
+      FieldRO(t('probDesc'), r.description) +
+      FieldRO(t('location'), r.location || (state.lang === 'ar' ? 'لم يتم التحديد' : 'Not specified')) +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span class="small bold muted">' + esc(t('priority')) + ':</span>' + Badge(pm.text, pm.bg, pm.fg) +
+      '</div>' +
+      FieldRO(t('date'), r.createdAt) +
+      (techs.length ? FieldRO(t('assignedTechLabel'), techs.join('، ')) : '') +
+    '</div>' +
+  '</div>';
+}
+
+// ---------------------------------------------------------------------------
+// 10) تطبيق "المدير"
+// ---------------------------------------------------------------------------
+function buildManagerApp(){
+  const u = state.user;
+  const pending = state.reports.filter(function(r){ return r.status==='pending'; });
+  const inProgress = state.reports.filter(function(r){ return r.status==='in_progress'; });
+  const done = state.reports.filter(function(r){ return r.status==='done'; });
+
+  const navItems = [
+    { key:'dashboard', label:t('home'), ic:'🏠' },
+    { key:'new', label:t('newFaults'), ic:'⚠️' },
+    { key:'requests', label:t('techRequests'), ic:'🙋', badge: state.techRequests.length || null },
+    { key:'all', label:t('faultsLog'), ic:'📋' },
+    { key:'profile', label:t('profile'), ic:'👤' },
+  ];
+
+  if (state.showDeptManager){ return buildDeptManagerScreen(); }
+  if (state.showSummon){ return buildSummonScreen(); }
+  if (state.showSummonLog){ return buildSummonLogScreen(); }
+  if (state.selected){ return buildManagerReportDetail(state.selected); }
+
+  if (state.tab === 'requests'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('techRequests'), null, Badge(String(state.techRequests.length),'rgba(255,255,255,.2)','#fff')) +
+      '<div class="scroll px16 pt16 gap10">' +
+        (state.techRequests.length===0 ? EmptyState(t('noRequests')) : state.techRequests.map(function(req){
+          return '' +
+          '<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+              '<div class="avatar-circle" style="width:34px;height:34px;margin:0;background:#F1F5F9;font-size:15px;">🔧</div>' +
+              '<div><div class="bold small">' + esc(req.name) + '</div><div class="small muted">' + esc(t('tech')) + '</div></div>' +
+            '</div>' +
+            '<div style="display:flex;gap:6px;">' +
+              '<button class="btn-sm btn-sm-allow" onclick="allowTechRequest(\''+req.id+'\',\''+escJs(req.name)+'\')">✔ ' + esc(t('allow')) + '</button>' +
+              '<button class="btn-sm btn-sm-reject" onclick="rejectTechRequest(\''+req.id+'\')">✖ ' + esc(t('reject')) + '</button>' +
+            '</div>' +
+          '</div>';
+        }).join('')) +
+      '</div>' +
+      BottomNav(navItems,'requests') +
+    '</div>';
+  }
+
+  if (state.tab === 'profile'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('profile'), null) +
+      '<div class="scroll px16 pt16 center-col">' +
+        '<div class="avatar-circle" style="background:var(--primaryLight);">👥</div>' +
+        '<div class="bold">' + esc(u.name) + '</div>' +
+        '<div class="muted small" style="margin-bottom:16px;">' + esc(t('manager')) + '</div>' +
+        '<div style="width:100%;">' +
+          MenuRow('🏷️', t('manageDepts'), 'openDeptManager()') +
+          MenuRow('📜', t('summonLog'), 'openSummonLog()') +
+          MenuRow('🔔', t('enableNotifications'), 'requestNotifyPermission()') +
+          MenuRow('⚙️', t('appSettings'), 'void(0)') +
+          MenuRow('ℹ️', t('aboutApp'), 'void(0)') +
+          MenuRow('🚪', t('logout'), 'doLogout()', true) +
+        '</div>' +
+      '</div>' +
+      BottomNav(navItems,'profile') +
+    '</div>';
+  }
+
+  if (state.tab === 'new'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('newFaults'), null, Badge(String(pending.length),'rgba(255,255,255,.2)','#fff')) +
+      '<div class="scroll px16 pt16 gap10">' +
+        (pending.length===0 ? EmptyState(t('noReports')) : pending.map(function(r){ return ReportCard(r,false); }).join('')) +
+      '</div>' +
+      BottomNav(navItems,'new') +
+    '</div>';
+  }
+
+  if (state.tab === 'addReport'){ return buildNewReportScreen(); }
+
+  if (state.tab === 'all'){
+    const mode = state.reportsListMode;
+    const visibleReports = mode === 'mine'
+      ? state.reports.filter(function(r){ return r.createdByName === state.user.name || r.assignedByName === state.user.name; })
+      : state.reports;
+    return '' +
+    '<div class="screen">' +
+      Header(t('faultsLog'), null) +
+      '<div class="px16 pt16">' +
+        '<div style="display:flex;gap:8px;background:#F1F5F9;padding:4px;border-radius:12px;">' +
+          '<button style="flex:1;border:none;padding:8px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;' + (mode==='mine' ? 'background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.08);' : 'background:transparent;color:#64748B;') + '" onclick="setReportsListMode(\'mine\')">' + esc(t('myReports')) + '</button>' +
+          '<button style="flex:1;border:none;padding:8px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;' + (mode==='all' ? 'background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.08);' : 'background:transparent;color:#64748B;') + '" onclick="setReportsListMode(\'all\')">' + esc(t('allReportsShort')) + '</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="scroll px16 pt16 gap10">' +
+        (visibleReports.length===0 ? EmptyState(t('noReports')) : visibleReports.map(function(r){ return ReportCard(r,true); }).join('')) +
+      '</div>' +
+      BottomNav(navItems,'all') +
+    '</div>';
+  }
+
+  // dashboard (default)
+  return '' +
+  '<div class="screen">' +
+    '<div class="top-banner">' +
+      '<div class="greet">' + esc(t('managerDashboard')) + '</div>' +
+      '<div class="name">' + esc(t('welcome')) + ' ' + esc(u.name) + '</div>' +
+    '</div>' +
+    '<div class="scroll px16 pt16 gap12">' +
+      '<button class="card" style="background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;border:none;" onclick="openSummon()">' +
+        '<div>' +
+          '<div class="bold" style="font-size:14px;">🙋 ' + esc(t('summonTech')) + '</div>' +
+          '<div class="small" style="color:rgba(255,255,255,.75);margin-top:2px;">' + esc(t('summonHint')) + '</div>' +
+        '</div>' +
+        '<span style="font-size:20px;">➕</span>' +
+      '</button>' +
+      '<button class="card" style="display:flex;align-items:center;justify-content:space-between;" onclick="openAddReport()">' +
+        '<div>' +
+          '<div class="bold" style="font-size:14px;">📝 ' + esc(t('newReport')) + '</div>' +
+          '<div class="small muted" style="margin-top:2px;">' + esc(t('addReportHint')) + '</div>' +
+        '</div>' +
+        '<span style="font-size:20px;">➕</span>' +
+      '</button>' +
+      (state.departments.length===0 ?
+        '<button class="banner-warning" onclick="openDeptManager()"><span style="font-size:18px;">⚠️</span><span class="warn-text">' + esc(t('noDepts')) + ' — ' + esc(t('noDeptsHint')) + '</span></button>'
+        : '') +
+      '<div class="stat-grid">' +
+        StatCard(t('stat_pending'), pending.length, 'var(--amber)') +
+        StatCard(t('stat_progress'), inProgress.length, 'var(--primary)') +
+        StatCard(t('stat_done'), done.length, 'var(--green)') +
+        StatCard(t('stat_total'), state.reports.length, 'var(--text)') +
+      '</div>' +
+      '<div class="row-between" style="display:flex;">' +
+        '<span class="bold small">' + esc(t('newFaults')) + '</span>' +
+        '<button class="link-btn" onclick="setTab(\'new\')">' + esc(t('viewAll')) + '</button>' +
+      '</div>' +
+      (pending.length===0 ? EmptyState(t('noReports')) : pending.slice(0,2).map(function(r){ return ReportCard(r,false); }).join('')) +
+    '</div>' +
+    BottomNav(navItems,'dashboard') +
+  '</div>';
+}
+function buildManagerReportDetail(r){
+  const sm = statusMeta(r.status);
+  const pm = priorityMeta(r.priority);
+  const isDone = r.status === 'done';
+  const techs = getAssignedTechs(r);
+  const effDuration = (r.durationEdited != null) ? r.durationEdited : r.duration;
+  const effH = effDuration != null ? Math.floor(effDuration/3600000) : '';
+  const effM = effDuration != null ? Math.round((effDuration%3600000)/60000) : '';
+  return '' +
+  '<div class="screen">' +
+    Header(t('reportDetails'), "closeReport()", '<button class="back-btn" onclick="deleteReport(\''+r.id+'\')" title="'+esc(t('deleteReport'))+'">🗑️</button>') +
+    '<div class="scroll px16 pt16 gap14">' +
+      '<div class="row-between" style="display:flex;">' +
+        '<span class="small bold muted">' + esc(t('reportNum')) + ' #' + esc(String(r.ts||0).slice(-4)) + '</span>' +
+        Badge(sm.text, sm.bg, sm.fg) +
+      '</div>' +
+      FieldRO(t('selectDept'), r.department) +
+      FieldRO(t('probDesc'), r.description) +
+      FieldRO(t('location'), r.location || (state.lang === 'ar' ? 'لم يتم التحديد' : 'Not specified')) +
+      FieldRO(t('sender'), r.createdByName || t('user')) +
+      FieldRO(t('date'), r.createdAt) +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span class="small bold muted">' + esc(t('priority')) + ':</span>' + Badge(pm.text, pm.bg, pm.fg) +
+      '</div>' +
+      (techs.length ? FieldRO(t('assignedTechLabel'), techs.join('، ')) : '') +
+      (techs.length ? (
+        '<div class="repair-note-box" style="background:#F1F5F9;">' +
+          '<div class="rn-title">⏱️ ' + esc(t('taskTiming')) + '</div>' +
+          '<div class="small" style="margin-top:6px;">' + esc(t('taskStartedAt')) + ': ' + (r.startedAt ? esc(formatClock(r.startedAt)) : esc(t('notStartedYet'))) + '</div>' +
+          (r.completedAt ? '<div class="small" style="margin-top:4px;">' + esc(t('taskCompletedAt')) + ': ' + esc(formatClock(r.completedAt)) + '</div>' : '') +
+          (effDuration != null ? '<div class="small bold" style="margin-top:4px;">' + esc(t('taskDuration')) + ': ' + esc(formatDuration(effDuration)) + '</div>' : '') +
+          (r.durationEdited != null && r.duration != null && r.durationEdited !== r.duration ?
+            '<div class="small muted" style="margin-top:2px;">' + esc(t('autoDuration')) + ': ' + esc(formatDuration(r.duration)) + '</div>' : '') +
+          (isDone ?
+            '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+              '<input class="input" type="number" min="0" id="durHInput" value="'+effH+'" placeholder="0" style="width:64px;" />' +
+              '<span class="small muted">' + esc(t('hoursShort')) + '</span>' +
+              '<input class="input" type="number" min="0" max="59" id="durMInput" value="'+effM+'" placeholder="0" style="width:64px;" />' +
+              '<span class="small muted">' + esc(t('minutesShort')) + '</span>' +
+              '<button class="btn-outline" style="width:auto;padding:8px 14px;" onclick="saveEditedDuration(\''+r.id+'\')">' + esc(t('saveDuration')) + '</button>' +
+            '</div>'
+          : '') +
+        '</div>'
+      ) : '') +
+      (r.note ? '<div class="repair-note-box"><div class="rn-title">' + esc(t('repairNote')) + '</div><div class="rn-text">' + esc(r.note) + '</div></div>' : '') +
+      (isDone && r.managerNote ? '<div class="repair-note-box" style="background:var(--primaryLight);"><div class="rn-title" style="color:var(--primary);">' + esc(t('managerNoteToTech')) + '</div><div class="rn-text">' + esc(r.managerNote) + '</div></div>' : '') +
+      (!isDone ? (
+        '<div>' +
+          '<label class="field-label" style="margin-bottom:8px;display:block;">' + esc(t('assignTech')) + '</label>' +
+          (state.activeTechs.length===0 ?
+            '<p class="small bold" style="color:var(--red);background:var(--redBg);padding:11px;border-radius:12px;">' + esc(t('noActiveTechs')) + '</p>'
+            : state.activeTechs.map(function(tc){
+                return '' +
+                '<div class="radio-row ' + (state.assignPicks.indexOf(tc.name)!==-1?'checked':'') + '" onclick="pickAssign(\''+escJs(tc.name)+'\')">' +
+                  '<div class="radio-dot"><div class="inner"></div></div>' +
+                  '<span class="small bold">' + esc(tc.name) + '</span>' +
+                '</div>';
+              }).join('')
+          ) +
+        '</div>' +
+        '<div class="field-block" style="margin-top:12px;">' +
+          '<label class="field-label">' + esc(t('managerNoteLabel')) + '</label>' +
+          '<textarea class="textarea" rows="3" placeholder="' + esc(t('managerNotePlaceholder')) + '" ' +
+            'oninput="state.assignNote=this.value;">' + esc(state.assignNote) + '</textarea>' +
+        '</div>'
+      ) : '') +
+    '</div>' +
+    (!isDone ?
+      '<div class="px16" style="padding-bottom:16px;">' +
+        '<button class="btn-primary" id="assignBtnEl" ' + (state.assignPicks.length?'':'disabled') + ' onclick="assignTechnician()">' + esc(t('assignBtn')) + '</button>' +
+      '</div>'
+      : '') +
+  '</div>';
+}
+function pickAssign(name){
+  const i = state.assignPicks.indexOf(name);
+  if (i === -1) state.assignPicks.push(name); else state.assignPicks.splice(i,1);
+  render();
+}
+function assignTechnician(){
+  if (!state.assignPicks.length || !state.selected) return;
+  const r = state.selected;
+  const techs = state.assignPicks.slice();
+  fbUpdate('reports/'+r.id, {
+    status:'in_progress',
+    assignedTechs: techs,
+    assignedTo: techs[0], // للتوافق مع أي عرض قديم يقرأ حقل فني واحد
+    assignedByName: state.user.name,
+    managerNote: state.assignNote.trim()
+  });
+  const body = r.department + ' — ' + truncateText(r.description, 60);
+  techs.forEach(function(name){ notifyTech(name, t('notifyNewTaskTitle'), body); });
+  state.selected = null;
+  state.assignPicks = [];
+  state.assignNote = '';
+  render();
+}
+function saveEditedDuration(id){
+  const hEl = document.getElementById('durHInput');
+  const mEl = document.getElementById('durMInput');
+  const h = parseInt((hEl && hEl.value) || '0', 10) || 0;
+  const m = parseInt((mEl && mEl.value) || '0', 10) || 0;
+  fbUpdate('reports/'+id, { durationEdited: (h*60 + m) * 60000 });
+}
+// استدعاء فني مباشرة — يُحفظ بقائمة "summons" منفصلة عن سجل الأعطال
+function openSummon(){
+  state.showSummon = true;
+  state.assignPicks = [];
+  state.assignNote = '';
+  render();
+}
+function closeSummon(){
+  state.showSummon = false;
+  state.assignPicks = [];
+  state.assignNote = '';
+  render();
+}
+function openAddReport(){
+  state.tab = 'addReport';
+  render();
+}
+function openSummonLog(){
+  state.showSummonLog = true;
+  render();
+}
+function closeSummonLog(){
+  state.showSummonLog = false;
+  render();
+}
+function buildSummonScreen(){
+  return '' +
+  '<div class="screen">' +
+    Header(t('summonTech'), "closeSummon()", '<button class="back-btn" onclick="openSummonLog()">📜</button>') +
+    '<div class="scroll px16 pt16">' +
+      '<div>' +
+        '<label class="field-label" style="margin-bottom:8px;display:block;">' + esc(t('assignTech')) + '</label>' +
+        (state.activeTechs.length===0 ?
+          '<p class="small bold" style="color:var(--red);background:var(--redBg);padding:11px;border-radius:12px;">' + esc(t('noActiveTechs')) + '</p>'
+          : state.activeTechs.map(function(tc){
+              return '' +
+              '<div class="radio-row ' + (state.assignPicks.indexOf(tc.name)!==-1?'checked':'') + '" onclick="pickAssign(\''+escJs(tc.name)+'\')">' +
+                '<div class="radio-dot"><div class="inner"></div></div>' +
+                '<span class="small bold">' + esc(tc.name) + '</span>' +
+              '</div>';
+            }).join('')
+        ) +
+      '</div>' +
+      '<div class="field-block" style="margin-top:12px;">' +
+        '<label class="field-label">📍 ' + esc(t('summonNoteLabel')) + '</label>' +
+        '<textarea class="textarea" rows="4" placeholder="' + esc(t('summonNotePlaceholder')) + '" ' +
+          'oninput="state.assignNote=this.value;">' + esc(state.assignNote) + '</textarea>' +
+      '</div>' +
+    '</div>' +
+    '<div class="px16" style="padding-bottom:16px;">' +
+      '<button class="btn-primary" ' + (state.assignPicks.length?'':'disabled') + ' onclick="summonTechnician()">🙋 ' + esc(t('summonBtn')) + '</button>' +
+    '</div>' +
+  '</div>';
+}
+function summonTechnician(){
+  if (!state.assignPicks.length) return;
+  const note = state.assignNote.trim();
+  const techs = state.assignPicks.slice();
+  const id = newId('s');
+  const summon = {
+    technicians: techs,
+    note: note,
+    createdByName: state.user.name,
+    createdAt: fmtDate(),
+    ts: Date.now(),
+  };
+  fbSet('summons/'+id, summon);
+  const body = note ? truncateText(note, 60) : t('summonTech');
+  techs.forEach(function(name){ notifyTech(name, t('notifySummonTitle'), body); });
+  state.showSummon = false;
+  state.assignPicks = [];
+  state.assignNote = '';
+  render();
+}
+function SummonCard(s){
+  const techs = (s.technicians && s.technicians.length) ? s.technicians : (s.technician ? [s.technician] : []);
+  return '' +
+  '<div class="card">' +
+    '<div class="row-between" style="display:flex;">' +
+      '<span class="bold small">🔧 ' + esc(techs.join('، ')) + '</span>' +
+      '<span class="small muted">' + esc(s.createdAt) + '</span>' +
+    '</div>' +
+    (s.note ? '<div class="small" style="margin-top:6px;">' + esc(s.note) + '</div>' : '') +
+    '<div class="small muted" style="margin-top:6px;">' + esc(t('summonBy')) + ': ' + esc(s.createdByName) + '</div>' +
+  '</div>';
+}
+function buildSummonLogScreen(){
+  return '' +
+  '<div class="screen">' +
+    Header(t('summonLog'), "closeSummonLog()") +
+    '<div class="scroll px16 pt16 gap10">' +
+      (state.summons.length===0 ? EmptyState(t('noSummons')) : state.summons.map(SummonCard).join('')) +
+    '</div>' +
+  '</div>';
+}
+function allowTechRequest(reqId, name){
+  const already = state.activeTechs.some(function(x){ return x.name===name; });
+  if (!already){
+    const id = newId('at');
+    fbSet('activeTechs/'+id, { name:name, ts:Date.now() });
+  }
+  fbRemove('techRequests/'+reqId);
+}
+function rejectTechRequest(reqId){ fbRemove('techRequests/'+reqId); }
+
+function buildDeptManagerScreen(){
+  return '' +
+  '<div class="screen">' +
+    Header(t('manageDepts'), "closeDeptManager()") +
+    '<div class="scroll px16 pt16">' +
+      '<div class="field-block" style="display:flex;gap:8px;align-items:flex-end;">' +
+        '<div style="flex:1;">' +
+          '<label class="field-label">' + esc(t('addDept')) + '</label>' +
+          '<input class="input" type="text" placeholder="' + esc(t('deptNamePlaceholder')) + '" value="' + esc(state.deptInput) + '" ' +
+            'oninput="state.deptInput=this.value;" onkeydown="if(event.key===\'Enter\'){addDepartment();}" />' +
+        '</div>' +
+        '<button class="btn-primary" style="width:auto;padding:11px 18px;" onclick="addDepartment()">➕</button>' +
+      '</div>' +
+      '<div class="gap8" style="margin-top:6px;">' +
+        (state.departments.length===0 ? EmptyState(t('noDepts')) : state.departments.map(function(d){
+          return '' +
+          '<div class="card" style="display:flex;align-items:center;justify-content:space-between;">' +
+            '<span class="bold small">🏷️ ' + esc(d.name) + '</span>' +
+            '<button class="btn-sm btn-sm-danger" onclick="deleteDepartment(\''+d.id+'\',\''+escJs(d.name)+'\')">🗑️ ' + esc(t('delete')) + '</button>' +
+          '</div>';
+        }).join('')) +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+function openDeptManager(){ state.showDeptManager = true; state.deptInput=''; render(); }
+function closeDeptManager(){ state.showDeptManager = false; state.deptInput=''; render(); }
+function addDepartment(){
+  const name = state.deptInput.trim();
+  if (!name) return;
+  const exists = state.departments.some(function(d){ return d.name === name; });
+  if (!exists){
+    const id = newId('d');
+    fbSet('departments/'+id, { name:name, ts:Date.now() });
+  }
+  state.deptInput = '';
+  render();
+}
+function deleteDepartment(id, name){
+  const msg = (state.lang==='ar' ? 'هل تريد حذف قسم' : 'Delete department') + ' "' + name + '"?';
+  if (!confirm(msg)) return;
+  fbRemove('departments/'+id);
+}
+
+// ---------------------------------------------------------------------------
+// 11) تطبيق "الفني"
+// ---------------------------------------------------------------------------
+function buildTechApp(){
+  const u = state.user;
+  const myTasks = state.reports.filter(function(r){ return getAssignedTechs(r).indexOf(u.name)!==-1 && r.status!=='done'; });
+  const myHistory = state.reports.filter(function(r){ return getAssignedTechs(r).indexOf(u.name)!==-1 && r.status==='done'; });
+  const navItems = [
+    { key:'tasks', label:t('myTasks'), ic:'📋' },
+    { key:'history', label:t('history'), ic:'📄' },
+    { key:'profile', label:t('profile'), ic:'👤' },
+  ];
+
+  if (state.selected){ return buildTechTaskDetail(state.selected); }
+
+  if (state.tab === 'profile'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('profile'), null) +
+      '<div class="scroll px16 pt16 center-col">' +
+        '<div class="avatar-circle" style="background:var(--greenBg);">🔧</div>' +
+        '<div class="bold">' + esc(u.name) + '</div>' +
+        '<div class="muted small" style="margin-bottom:16px;">' + esc(t('tech')) + '</div>' +
+        '<div style="width:100%;">' +
+          MenuRow('🔔', t('enableNotifications'), 'requestNotifyPermission()') +
+          MenuRow('⚙️', t('appSettings'), 'void(0)') +
+          MenuRow('ℹ️', t('aboutApp'), 'void(0)') +
+          MenuRow('🚪', t('logout'), 'doLogout()', true) +
+        '</div>' +
+      '</div>' +
+      BottomNav(navItems,'profile') +
+    '</div>';
+  }
+
+  if (state.tab === 'history'){
+    return '' +
+    '<div class="screen">' +
+      Header(t('history'), null) +
+      '<div class="scroll px16 pt16 gap10">' +
+        (myHistory.length===0 ? EmptyState(t('noCompletedTasks')) : myHistory.map(function(r){ return ReportCard(r,false); }).join('')) +
+      '</div>' +
+      BottomNav(navItems,'history') +
+    '</div>';
+  }
+
+  // tasks (default)
+  return '' +
+  '<div class="screen">' +
+    '<div class="top-banner">' +
+      '<div class="greet">' + esc(t('welcome')) + ' 🛠️</div>' +
+      '<div class="name">' + esc(u.name) + '</div>' +
+    '</div>' +
+    '<div class="scroll px16 pt16 gap10">' +
+      '<div class="row-between" style="display:flex;">' +
+        '<span class="bold small">' + esc(t('myTasks')) + '</span>' + Badge(String(myTasks.length),'var(--primaryLight)','var(--primary)') +
+      '</div>' +
+      (myTasks.length===0 ? EmptyState(t('noTasks')) : myTasks.map(function(r){ return ReportCard(r,false); }).join('')) +
+    '</div>' +
+    BottomNav(navItems,'tasks') +
+  '</div>';
+}
+function buildTechTaskDetail(r){
+  const pm = priorityMeta(r.priority);
+  const isDone = r.status === 'done';
+  return '' +
+  '<div class="screen">' +
+    Header(t('taskDetails'), "closeReport()") +
+    '<div class="scroll px16 pt16 gap14">' +
+      '<div class="row-between" style="display:flex;">' +
+        '<span class="small bold muted">' + esc(t('reportNum')) + ' #' + esc(String(r.ts||0).slice(-4)) + '</span>' +
+        Badge(pm.text, pm.bg, pm.fg) +
+      '</div>' +
+      FieldRO(t('selectDept'), r.department) +
+      FieldRO(t('probDesc'), r.description) +
+      FieldRO(t('location'), r.location || (state.lang === 'ar' ? 'لم يتم التحديد' : 'Not specified')) +
+      FieldRO(t('date'), r.createdAt) +
+      (r.managerNote ? '<div class="repair-note-box" style="background:var(--primaryLight);"><div class="rn-title" style="color:var(--primary);">📌 ' + esc(t('managerNoteToTech')) + '</div><div class="rn-text">' + esc(r.managerNote) + '</div></div>' : '') +
+      (!isDone ? (
+        r.startedAt ?
+          '<p class="small bold" style="color:var(--primary);">▶️ ' + esc(t('taskStartedAt')) + ': ' + esc(formatClock(r.startedAt)) + '</p>'
+          : '<button class="btn-outline" onclick="startTask()">▶️ ' + esc(t('startTask')) + '</button>'
+      ) : '') +
+      (!isDone ?
+        '<div><label class="field-label" style="display:block;margin-bottom:5px;">' + esc(t('repairNote')) + '</label>' +
+        '<textarea class="textarea" rows="3" placeholder="' + esc(t('repairNotePlaceholder')) + '" oninput="state.repairNote=this.value;">' + esc(state.repairNote) + '</textarea></div>'
+        : '<div class="repair-note-box"><div class="rn-title">' + esc(t('repairNote')) + '</div><div class="rn-text">' + esc(r.note) + '</div></div>'
+      ) +
+    '</div>' +
+    (!isDone ?
+      '<div class="px16" style="padding-bottom:16px;">' +
+        '<button class="btn-primary btn-green" onclick="resolveTask()">✅ ' + esc(t('taskDoneBtn')) + '</button>' +
+      '</div>'
+      : '') +
+  '</div>';
+}
+function startTask(){
+  if (!state.selected || state.selected.startedAt) return;
+  const r = state.selected;
+  fbUpdate('reports/'+r.id, { startedAt: Date.now() });
+  const body = state.user.name + ' — ' + r.department;
+  notifyAllManagers(t('notifyTaskStartedTitle'), body);
+  const creatorRole = r.createdByRole || 'user';
+  if (creatorRole !== 'manager' && r.createdByName){
+    notifyPerson(creatorRole, r.createdByName, t('notifyTaskStartedTitle'), body);
+  }
+  render();
+}
+function resolveTask(){
+  if (!state.selected) return;
+  const note = state.repairNote.trim() || (state.lang==='ar' ? 'تم إصلاح العطل بنجاح.' : 'Fixed successfully.');
+  const r = state.selected;
+  const completedAt = Date.now();
+  const patch = { status:'done', note:note, completedAt: completedAt };
+  if (r.startedAt){ patch.duration = completedAt - r.startedAt; }
+  fbUpdate('reports/'+r.id, patch);
+  const durTxt = r.startedAt ? (' — ' + formatDuration(completedAt - r.startedAt)) : '';
+  const body = state.user.name + ' — ' + r.department + ' — ' + truncateText(note, 60) + durTxt;
+  // إشعار كل المدراء دايماً
+  notifyAllManagers(t('notifyTaskDoneTitle'), body);
+  // وإشعار صاحب البلاغ الأصلي بالاسم — إلا إذا كان مديراً (لأنه أصلاً
+  // بياخذ الإشعار من notifyAllManagers فوق، وما نبي نكرره له)
+  const creatorRole = r.createdByRole || 'user'; // بلاغات قديمة قبل هذا التحديث كانت كلها من دور "مستخدم"
+  if (creatorRole !== 'manager' && r.createdByName){
+    notifyPerson(creatorRole, r.createdByName, t('notifyTaskDoneTitle'), body);
+  }
+  state.selected = null;
+  state.repairNote = '';
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// 12) التنقل / تسجيل الدخول والخروج
+// ---------------------------------------------------------------------------
+function openReport(id){
+  const r = state.reports.find(function(x){ return x.id===id; });
+  if (!r) return;
+  state.selected = r;
+  state.assignPicks = getAssignedTechs(r);
+  state.assignNote = r.managerNote || '';
+  state.repairNote = '';
+  render();
+}
+function closeReport(){
+  state.selected = null; state.assignPicks=[]; state.repairNote='';
+  render();
+}
+function deleteReport(id){
+  const msg = state.lang==='ar'
+    ? 'هل أنت متأكد من حذف هذا البلاغ نهائياً؟ لا يمكن التراجع عن هذا الإجراء.'
+    : 'Delete this report permanently? This action cannot be undone.';
+  if (!confirm(msg)) return;
+  fbRemove('reports/'+id);
+  state.selected = null;
+  state.assignPicks = [];
+  state.repairNote = '';
+  render();
+}
+function selectRole(role){
+  state.selectedRole = role;
+  state.nameInput=''; state.passcodeInput=''; state.loginError='';
+  state.screen = 'login';
+  render();
+}
+function setScreen(scr){
+  state.screen = scr;
+  if (scr==='role') state.selectedRole = null;
+  render();
+}
+function switchLang(){
+  state.lang = state.lang==='ar' ? 'en' : 'ar';
+  render();
+}
+function setTab(tabKey){
+  state.tab = tabKey;
+  state.selected = null;
+  render();
+}
+function setReportsListMode(mode){
+  state.reportsListMode = mode;
+  render();
+}
+function doLogout(){
+  clearSession();
+  state.user=null; state.tab=null; state.screen='role'; state.selectedRole=null; state.selected=null;
+  render();
+}
+function doLogin(){
+  const role = state.selectedRole;
+  const name = state.nameInput.trim();
+  if (!name) return;
+  if (role === 'manager'){
+    if (state.passcodeInput === MANAGER_PASSCODE){
+      completeLogin(role, name);
+    } else {
+      state.loginError = t('wrongPasscode');
+      refreshLoginError();
+    }
+    return;
+  }
+  if (role === 'tech'){
+    const isActive = state.activeTechs.some(function(x){ return x.name===name; });
+    if (isActive){ completeLogin(role, name); return; }
+    const alreadyPending = state.techRequests.some(function(x){ return x.name.toLowerCase()===name.toLowerCase(); });
+    if (!alreadyPending){
+      const id = newId('tr');
+      fbSet('techRequests/'+id, { name:name, ts:Date.now() });
+    }
+    state._pendingName = name;
+    state.screen = 'pending';
+    render();
+    return;
+  }
+  completeLogin(role, name);
+}
+function completeLogin(role, name){
+  state.user = { role:role, name:name };
+  state.tab = role==='manager' ? 'dashboard' : (role==='tech' ? 'tasks' : 'home');
+  state.screen = null;
+  state.nameInput=''; state.passcodeInput=''; state.loginError='';
+  saveSession(state.user);
+  requestNotifyPermission();
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// 13) المُصيّر الرئيسي (Render)
+// ---------------------------------------------------------------------------
+function render(){
+  document.documentElement.setAttribute('lang', state.lang);
+  document.documentElement.setAttribute('dir', state.lang==='ar' ? 'rtl' : 'ltr');
+  const root = document.getElementById('app');
+  if (!root) return;
+
+  if (!firebaseOK){ root.innerHTML = buildSetupScreen(); return; }
+
+  let html;
+  if (!state.user){
+    if (state.screen==='pending') html = buildPendingScreen();
+    else if (state.screen==='login') html = buildLoginScreen();
+    else html = buildRoleScreen();
+  } else if (state.user.role==='user') html = buildUserApp();
+  else if (state.user.role==='manager') html = buildManagerApp();
+  else html = buildTechApp();
+
+  if (state.connectionSlow){
+    html = '<div class="connecting-hint">⚠️ ' + esc(t('connectionTrouble')) + '</div>' + html;
+  }
+  root.innerHTML = html;
+}
+
+// ---------------------------------------------------------------------------
+// 14) الإقلاع
+// ---------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', function(){
+  initFirebase();
+  const saved = loadSession();
+  if (saved){
+    state.user = saved;
+    state.tab = saved.role==='manager' ? 'dashboard' : (saved.role==='tech' ? 'tasks' : 'home');
+    requestNotifyPermission();
+  }
+  render();
+});
+
+</script>
+</body>
+</html>
